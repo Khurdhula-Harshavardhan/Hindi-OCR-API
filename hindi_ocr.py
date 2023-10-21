@@ -91,14 +91,12 @@ class CNN(Image_Processor):
         try:
             self.confidences = dict()
             for i in range(len(predictions)):
-                confidence = predictions[i]
+                confidence = float(predictions[i])  # Convert to native float
                 hindi_char = self.original_characters.get(self.labels.get(str(i)))
                 self.confidences[hindi_char] = confidence
             return self.confidences
         except Exception as e:
-            return {"Result": "Failed",
-                    "ERROR": str(e),
-                    "ERR at": "hindi_ocr.CNN.get_confindences"}
+            return {"Result": "Failed", "ERROR": str(e), "ERR at": "hindi_ocr.CNN.get_confindences"}
 
     def extract_character(self, image: bytes) -> dict:
         """
@@ -116,8 +114,7 @@ class CNN(Image_Processor):
                 "Model": "CNN",
                 "Type": "Sequential",
                 "Prediction": self.original_characters.get(self.labels.get(str(predicted_class), "NaN")),
-                "Confidence": predictions[0][predicted_class],
-                "Other Confidences": confidences
+                "Confidence": float(predictions[0][predicted_class])
             }
         except Exception as e:
             return {"Result": "Failed",
@@ -174,14 +171,12 @@ class RNN(Image_Processor):
         try:
             self.confidences = dict()
             for i in range(len(predictions)):
-                confidence = predictions[i]
+                confidence = float(predictions[i])  # Convert to native float
                 hindi_char = self.original_characters.get(self.labels.get(str(i)))
                 self.confidences[hindi_char] = confidence
             return self.confidences
         except Exception as e:
-            return {"Result": "Failed",
-                    "ERROR": str(e),
-                    "ERR at": "hindi_ocr.RNN.get_confindences"}
+            return {"Result": "Failed", "ERROR": str(e), "ERR at": "hindi_ocr.RNN.get_confindences"}
 
     def extract_character(self, image: bytes) -> dict:
         """
@@ -199,8 +194,7 @@ class RNN(Image_Processor):
                 "Model": "RNN",
                 "Type": "Sequential",
                 "Prediction": self.original_characters.get(self.labels.get(str(predicted_class), "NaN")),
-                "Confidence": predictions[0][predicted_class],
-                "Other Confidences": confidences
+                "Confidence": float(predictions[0][predicted_class])
             }
         except Exception as e:
             return {"Result": "Failed",
