@@ -1,0 +1,21 @@
+name: Deploy Flask App to Heroku
+
+on:
+  push:
+    branches:
+      - main  # or the name of your default branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Deploy to Heroku
+      uses: akhileshns/heroku-deploy@v3.5.7
+      with:
+        heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+        heroku_app_name: ${{ secrets.HEROKU_APP_NAME }}
+        heroku_email: "khurdhulaharshavardhan@gmail.com"
