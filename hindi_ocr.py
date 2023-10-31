@@ -32,6 +32,7 @@ class Image_Processor():
         try:
             self.raw_image_data = image_data
             self.image_data = base64.b64decode(self.raw_image_data)
+            #self.save_image_locally()
             self.image = image.img_to_array(image.load_img(BytesIO(self.image_data), target_size=(32, 32)))
             
 
@@ -48,6 +49,7 @@ class Image_Processor():
         try:
             self.raw_image_data = image_data
             self.image_data = base64.b64decode(self.raw_image_data)
+            #self.save_image_locally()
             self.image = image.img_to_array(image.load_img(BytesIO(self.image_data), target_size=(32, 32), color_mode="grayscale"))
             
 
@@ -56,6 +58,21 @@ class Image_Processor():
             return {"Result": "Failed",
                     "ERROR": str(e),
                     "ERR at": "hindi_ocr.Image_Processor.read_grayscale_image"}
+        
+
+    def save_image_locally(self, file_name="image.png"):
+        """
+        Save the image data to a local file.
+        """
+        try:
+            with open(file_name, "wb") as f:
+                f.write(self.image_data)
+        except Exception as e:
+            return {
+                "Result": "Failed",
+                "ERROR": str(e),
+                "ERR at": "hindi_ocr.Image_Processor.save_image_locally"
+            }
 
 class CNN(Image_Processor):
     """
@@ -91,12 +108,14 @@ class CNN(Image_Processor):
         try:
             self.confidences = dict()
             for i in range(len(predictions)):
-                confidence = float(predictions[i])  # Convert to native float
+                confidence = predictions[i]
                 hindi_char = self.original_characters.get(self.labels.get(str(i)))
                 self.confidences[hindi_char] = confidence
             return self.confidences
         except Exception as e:
-            return {"Result": "Failed", "ERROR": str(e), "ERR at": "hindi_ocr.CNN.get_confindences"}
+            return {"Result": "Failed",
+                    "ERROR": str(e),
+                    "ERR at": "hindi_ocr.CNN.get_confindences"}
 
     def extract_character(self, image: bytes) -> dict:
         """
@@ -111,10 +130,10 @@ class CNN(Image_Processor):
             confidences = self.get_confidences(predictions=predictions[0])
             return {
                 "Result": "Success",
-                "Model": "CNN",
-                "Type": "Sequential",
+                "Model": "Convolutional Neural Network (CNN)",
+                "Type": "Multi-Sequential+Pooling",
                 "Prediction": self.original_characters.get(self.labels.get(str(predicted_class), "NaN")),
-                "Confidence": float(predictions[0][predicted_class])
+                "Confidence %": round((predictions[0][predicted_class])*100,2),
             }
         except Exception as e:
             return {"Result": "Failed",
@@ -171,12 +190,14 @@ class RNN(Image_Processor):
         try:
             self.confidences = dict()
             for i in range(len(predictions)):
-                confidence = float(predictions[i])  # Convert to native float
+                confidence = predictions[i]
                 hindi_char = self.original_characters.get(self.labels.get(str(i)))
                 self.confidences[hindi_char] = confidence
             return self.confidences
         except Exception as e:
-            return {"Result": "Failed", "ERROR": str(e), "ERR at": "hindi_ocr.RNN.get_confindences"}
+            return {"Result": "Failed",
+                    "ERROR": str(e),
+                    "ERR at": "hindi_ocr.RNN.get_confindences"}
 
     def extract_character(self, image: bytes) -> dict:
         """
@@ -191,10 +212,10 @@ class RNN(Image_Processor):
             confidences = self.get_confidences(predictions=predictions[0])
             return {
                 "Result": "Success",
-                "Model": "RNN",
-                "Type": "Sequential",
+                "Model": "Recurrent Neural Network (RNN)",
+                "Type": "Reshaped-Sequential",
                 "Prediction": self.original_characters.get(self.labels.get(str(predicted_class), "NaN")),
-                "Confidence": float(predictions[0][predicted_class])
+                "Confidence %": round((predictions[0][predicted_class])*100,2),
             }
         except Exception as e:
             return {"Result": "Failed",

@@ -8,19 +8,51 @@
     <style>
         canvas {
             border: 1px solid black;
+            background-color: black;
         }
+        .trash-icon {
+            cursor: pointer;
+            font-size: 24px;
+            margin-left: 10px;
+            size: 50px;
+        }
+
+       
+        .dialog {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+
+            width: 80%;
+            padding: 20px;
+            font-size: 25px;
+            font-weight: bold;
+            border-radius: 5px;
+            background-color: #ffffff;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            overflow-y: auto;
+            overflow-x: auto; 
+        
     </style>
 </head>
 
 <body>
-    <canvas id="drawCanvas" width="400" height="400"></canvas>
+    <canvas id="drawCanvas" width="800" height="800"></canvas>
+    <span class="trash-icon" onclick="clearCanvas()">&#128465;</span>
     <button onclick="submitDrawing()">Submit</button>
-    <div id="response"></div>
+    <div id="responseDialog" class="dialog">
+        <pre id="response"></pre>
+        <button onclick="closeDialog()">Close</button>
+    </div>
 
     <script>
         const canvas = document.getElementById('drawCanvas');
         const ctx = canvas.getContext('2d');
         let isDrawing = false;
+
+        ctx.strokeStyle = 'white';
 
         canvas.addEventListener('mousedown', () => isDrawing = true);
         canvas.addEventListener('mouseup', () => {
@@ -40,18 +72,66 @@
             ctx.moveTo(event.clientX - canvas.offsetLeft, event.clientY - canvas.offsetTop);
         }
 
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            isDrawing = false;
+        }
+
+        function getCropCoordinates() {
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const pixels = imgData.data;
+
+    let minX = canvas.width;
+    let minY = canvas.height;
+    let maxX = -1;
+    let maxY = -1;
+
+    for (let x = 0; x < canvas.width; x++) {
+        for (let y = 0; y < canvas.height; y++) {
+            const i = (y * canvas.width + x) * 4;
+            const avg = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
+
+            // If pixel is not black, update the bounds
+            if (avg !== 0) {
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+            }
+        }
+    }
+
+    // Add padding
+    const padding = 25; // You can adjust this value as needed
+    minX = Math.max(0, minX - padding);
+    minY = Math.max(0, minY - padding);
+    maxX = Math.min(canvas.width, maxX + padding);
+    maxY = Math.min(canvas.height, maxY + padding);
+
+    return { minX, minY, width: maxX - minX, height: maxY - minY };
+}
+
+
         function submitDrawing() {
+            const coords = getCropCoordinates();
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = 32;
             tempCanvas.height = 32;
 
             const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.drawImage(canvas, 0, 0, 32, 32);
+            tempCtx.fillStyle = "black";
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+            // Draw the cropped image onto the tempCanvas
+            tempCtx.drawImage(canvas, coords.minX, coords.minY, coords.width, coords.height, 0, 0, 32, 32);
 
             const dataUrl = tempCanvas.toDataURL('image/png');
+            console.log("Scaled Image Data URL:", dataUrl);
+
             const base64Image = dataUrl.split(',')[1];
 
-            // Make API Call
             fetch('http://127.0.0.1:5000/predict', {
                 method: 'POST',
                 headers: {
@@ -61,14 +141,24 @@
             })
             .then(response => response.json())
             .then(data => {
-                console.log(data)
-                document.getElementById('response').innerText = JSON.stringify(data);
+                console.log(data);
+                document.getElementById('response').innerText = JSON.stringify(data, null, 2); // nicely format JSON
+                openDialog(); // show dialog box
             })
             .catch(error => {
                 console.error('Error:', error);
                 document.getElementById('response').innerText = 'Error occurred while making API call.';
             });
         }
+    
+        function openDialog() {
+            document.getElementById('responseDialog').style.display = 'block';
+        }
+
+        function closeDialog() {
+            document.getElementById('responseDialog').style.display = 'none';
+        }
+
     </script>
 </body>
 
